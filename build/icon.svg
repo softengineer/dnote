@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7c6cf2"/>
+      <stop offset="1" stop-color="#4f46c8"/>
+    </linearGradient>
+    <linearGradient id="page" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eef0f7"/>
+    </linearGradient>
+  </defs>
+  <!-- 背景 -->
+  <rect x="24" y="24" width="464" height="464" rx="104" fill="url(#bg)"/>
+  <!-- 笔记本 -->
+  <g>
+    <rect x="134" y="108" width="232" height="320" rx="22" fill="#1b1460" opacity="0.28"/>
+    <rect x="128" y="96" width="232" height="320" rx="22" fill="url(#page)"/>
+    <rect x="128" y="96" width="44" height="320" rx="22" fill="#d9dcf0"/>
+    <rect x="150" y="96" width="22" height="320" fill="#d9dcf0"/>
+  </g>
+  <!-- 横线 -->
+  <g stroke="#b9bde0" stroke-width="10" stroke-linecap="round">
+    <line x1="200" y1="164" x2="324" y2="164"/>
+    <line x1="200" y1="212" x2="324" y2="212"/>
+    <line x1="200" y1="260" x2="290" y2="260"/>
+    <line x1="200" y1="308" x2="256" y2="308"/>
+  </g>
+  <!-- 线圈 -->
+  <g fill="none" stroke="#3d3a8c" stroke-width="10" stroke-linecap="round">
+    <path d="M118 140 h36"/><path d="M118 196 h36"/><path d="M118 252 h36"/><path d="M118 308 h36"/><path d="M118 364 h36"/>
+  </g>
+  <!-- 铅笔（沿 45° 斜放在右下） -->
+  <g transform="translate(327 323) rotate(45) scale(0.85)">
+    <rect x="-18" y="-168" width="48" height="198" rx="8" fill="#1b1460" opacity="0.25"/>
+    <rect x="-24" y="-140" width="48" height="160" rx="6" fill="#ffc83d"/>
+    <rect x="-24" y="-140" width="16" height="160" fill="#ffd970"/>
+    <rect x="8" y="-140" width="16" height="160" fill="#f0a91c"/>
+    <rect x="-24" y="-176" width="48" height="30" rx="8" fill="#ff7a8a"/>
+    <rect x="-24" y="-152" width="48" height="16" fill="#c9cfdc"/>
+    <path d="M-24 20 L24 20 L0 78 Z" fill="#f5d6a8"/>
+    <path d="M-9 56 L9 56 L0 78 Z" fill="#2d2a5a"/>
+  </g>
+</svg>

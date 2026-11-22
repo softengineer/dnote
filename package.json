@@ -1,0 +1,77 @@
+{
+  "name": "dnotes",
+  "version": "0.1.0",
+  "description": "轻量级 Markdown 笔记 & 日记，原生 Git 同步",
+  "main": "electron/main.cjs",
+  "type": "module",
+  "author": "davidfan",
+  "license": "MIT",
+  "scripts": {
+    "dev": "concurrently -k -n vite,electron \"vite\" \"wait-on tcp:127.0.0.1:5173 && electron . --dev --no-sandbox\"",
+    "build": "tsc --noEmit && vite build",
+    "start": "electron .",
+    "typecheck": "tsc --noEmit",
+    "dist": "npm run build && electron-builder",
+    "dist:linux": "npm run build && electron-builder --linux AppImage"
+  },
+  "build": {
+    "appId": "com.davidfan.dnotes",
+    "productName": "DNotes",
+    "files": [
+      "dist/**",
+      "electron/**",
+      "package.json",
+      "build/icon.png"
+    ],
+    "icon": "build/icon.png",
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Office",
+      "artifactName": "${productName}-${version}.${ext}"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "directories": {
+      "output": "release"
+    }
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "^6.20.4",
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/lang-markdown": "^6.5.2",
+    "@codemirror/language": "^6.13.1",
+    "@codemirror/language-data": "^6.5.2",
+    "@codemirror/search": "^6.7.2",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.15",
+    "@lezer/highlight": "^1.2.5",
+    "chokidar": "^6.0.0",
+    "dompurify": "^3.5.0",
+    "font-list": "^2.1.0",
+    "highlight.js": "^11.12.0",
+    "lucide-react": "^1.77.0",
+    "markdown-it": "^15.0.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "simple-git": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "^14.2.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "concurrently": "^10.0.7",
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "wait-on": "^9.5.1"
+  }
+}

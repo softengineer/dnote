@@ -6,7 +6,50 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
-if [[ "${1:-}" != "--skip-build" ]]; then
+usage() {
+  cat <<USAGE
+用法: ./deploy.sh [选项]
+  （无选项）     打包 AppImage 并安装，同时安装 CLI
+  --skip-build   跳过打包，直接安装 release/ 下最新的 AppImage（同时安装 CLI）
+  --cli-only     只编译并安装 CLI 到 ~/.local/bin/dnote
+  --no-cli       不安装 CLI
+USAGE
+}
+
+SKIP_BUILD=0 CLI_ONLY=0 NO_CLI=0
+for arg in "$@"; do
+  case "$arg" in
+    --skip-build) SKIP_BUILD=1 ;;
+    --cli-only)   CLI_ONLY=1 ;;
+    --no-cli)     NO_CLI=1 ;;
+    -h|--help)    usage; exit 0 ;;
+    *) echo "deploy: unknown option: $arg" >&2; usage >&2; exit 2 ;;
+  esac
+done
+if (( CLI_ONLY && NO_CLI )); then
+  echo "deploy: --cli-only 和 --no-cli 不能同时使用" >&2; exit 2
+fi
+
+# 命令行工具 dnote（Go），装到 ~/.local/bin
+CLI_DEST="${HOME}/.local/bin/dnote"
+install_cli() {
+  if ! command -v go >/dev/null 2>&1; then
+    echo "deploy: go not found, cannot build CLI" >&2
+    return 1
+  fi
+  mkdir -p "$(dirname "${CLI_DEST}")"
+  # 先编译到临时文件再改名，避免覆盖正在运行的二进制时出错
+  (cd "${ROOT}/cli" && go build -o "${CLI_DEST}.tmp" .)
+  mv -f "${CLI_DEST}.tmp" "${CLI_DEST}"
+  echo "deploy: installed CLI -> ${CLI_DEST}"
+}
+
+if (( CLI_ONLY )); then
+  install_cli
+  exit 0
+fi
+
+if (( ! SKIP_BUILD )); then
   npm run dist:linux
 fi
 
@@ -56,6 +99,10 @@ cp -f "${APPIMAGE}" "${DEST}.tmp"
 chmod +x "${DEST}.tmp"
 mv -f "${DEST}.tmp" "${DEST}"
 echo "deploy: installed ${APPIMAGE} -> ${DEST}"
+
+if (( ! NO_CLI )); then
+  install_cli || echo "deploy: skipping CLI" >&2
+fi
 
 # 图标：装到用户图标主题目录，桌面启动项通过 Icon=dnotes 引用
 ICON_DIR="${HOME}/.local/share/icons/hicolor/512x512/apps"

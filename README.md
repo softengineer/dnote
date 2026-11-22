@@ -24,7 +24,7 @@ npm run dev          # Vite + Electron 热更新
 npm run build        # 类型检查 + 构建前端到 dist/
 npm start            # 运行构建后的版本
 npm run dist         # 打包安装包（electron-builder，输出到 release/）
-./deploy.sh           # 打包 AppImage 并安装到 ~/Apps/DNotes.AppImage（--skip-build 跳过打包）
+./deploy.sh           # 打包 AppImage 并安装到 ~/Apps/DNotes.AppImage，同时安装 CLI（--skip-build 跳过打包，--cli-only 只装 CLI，--no-cli 不装 CLI）
 ```
 
 `npm run dev` 默认带 `--no-sandbox`（仅开发用，规避 Linux 上 chrome-sandbox 权限报错）。
@@ -33,6 +33,18 @@ npm run dist         # 打包安装包（electron-builder，输出到 release/�
 ```bash
 sudo chown root:root node_modules/electron/dist/chrome-sandbox && sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
 ```
+
+## 命令行
+
+`cli/` 下是 Go 写的 `dnote` 命令（`./deploy.sh` 会装到 `~/.local/bin/dnote`，或 `cd cli && go build -o ~/.local/bin/dnote .`）：
+
+```bash
+dnote <文件名> [--vault <路径>]             # 显示笔记内容：按文件名匹配，忽略目录，.md 可省略；多个匹配全部显示
+dnote --search <关键词> [--vault <路径>]    # 在 vault 中搜索（不区分大小写），输出 路径:行号: 内容
+dnote <文件名> --search <关键词>            # 只在匹配的笔记中搜索
+```
+
+未指定 `--vault` 时，优先使用当前目录所在的已知 vault，否则使用 DNotes 最后打开的 vault（读取 `~/.config/dnotes/config.json`）。没有精确的文件名匹配时退化为包含匹配。
 
 ## 结构
 

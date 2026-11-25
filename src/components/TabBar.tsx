@@ -21,8 +21,8 @@ export default function TabBar({ tabs, active, onSelect, onClose, onContext, onR
   const cur = tabs.find((t) => t.id === active)
   return (
     <div className="tabbar">
-      {/* 点击标签后的空白处 = 新建笔记 */}
-      <div className="tabs" onClick={(e) => { if (e.target === e.currentTarget) onNew() }}>
+      {/* 双击标签后的空白处 = 新建笔记 */}
+      <div className="tabs" onDoubleClick={(e) => { if (e.target === e.currentTarget) onNew() }}>
         {tabs.map((t, i) => (
           <div
             key={t.id}

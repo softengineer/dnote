@@ -275,7 +275,9 @@ export default function App() {
       return
     }
     let tab: Tab
-    try { tab = await loadTab(path) } catch (e) { return toast(t('openFailed', { err: errMsg(e) }), 'error') }
+    // 沿用当前标签的查看/编辑模式
+    const curMd = tabsRef.current.find((t) => t.id === activeRef.current && t.kind === 'md')
+    try { tab = await loadTab(path, curMd?.mode) } catch (e) { return toast(t('openFailed', { err: errMsg(e) }), 'error') }
     if (opts.line) { tab.jump = { line: opts.line, nonce: Date.now() }; if (tab.mode === 'preview') tab.mode = 'edit' }
     const cur = tabsRef.current.find((t) => t.id === activeRef.current)
     if (!opts.newTab && cur) {
@@ -701,6 +703,7 @@ export default function App() {
                         onPasteFiles={(fs) => pasteFiles(t, fs)}
                         onScrollLine={t.mode === 'split' ? (line) => updateTab(t.id, { syncLine: line }) : undefined}
                         onReady={(v) => setEditorViews((m) => ({ ...m, [t.id]: v }))}
+                        onEscape={() => updateTab(t.id, { mode: 'preview' })}
                       />
                     </div>
                   )}
@@ -714,6 +717,7 @@ export default function App() {
                         onOpen={(target, o) => openLink(t, target, o)}
                         onToggleTask={(line, c) => toggleTask(t, line, c)}
                         syncLine={t.mode === 'split' ? t.syncLine : undefined}
+                        onDblClick={t.mode === 'preview' ? (line) => updateTab(t.id, { mode: 'edit', ...(line != null && { jump: { line: line + 1, nonce: Date.now() } }) }) : undefined}
                       />
                     </div>
                   )}

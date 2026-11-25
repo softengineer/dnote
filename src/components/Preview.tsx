@@ -10,9 +10,10 @@ interface Props {
   onOpen: (target: string, opts: { wiki: boolean; newTab: boolean; heading?: string }) => void
   onToggleTask: (line: number, checked: boolean) => void
   syncLine?: number
+  onDblClick?: (line: number | null) => void // 双击：传入最近块的源码行号（0 起）
 }
 
-export default function Preview({ content, notePath, vaultRoot, resolveLink, onOpen, onToggleTask, syncLine }: Props) {
+export default function Preview({ content, notePath, vaultRoot, resolveLink, onOpen, onToggleTask, syncLine, onDblClick }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const html = useMemo(() => renderMarkdown(content), [content])
 
@@ -72,10 +73,18 @@ export default function Preview({ content, notePath, vaultRoot, resolveLink, onO
     onOpen(join(dirname(notePath), decodeURI(p)), { wiki: false, newTab, heading })
   }
 
+  const onDoubleClick = (ev: React.MouseEvent) => {
+    if (!onDblClick) return
+    const t = ev.target as HTMLElement
+    if (t.closest('a, input')) return
+    const b = t.closest<HTMLElement>('[data-line]')
+    onDblClick(b ? Number(b.dataset.line) : null)
+  }
+
   const scrollToHeading = (h: string) => {
     const el = ref.current?.querySelector(`[id="${CSS.escape(slug(h))}"]`)
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  return <div className="markdown-body" ref={ref} onClick={onClick} onAuxClick={onClick} dangerouslySetInnerHTML={{ __html: html }} />
+  return <div className="markdown-body" ref={ref} onClick={onClick} onAuxClick={onClick} onDoubleClick={onDoubleClick} dangerouslySetInnerHTML={{ __html: html }} />
 }

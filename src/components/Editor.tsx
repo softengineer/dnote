@@ -57,6 +57,7 @@ export interface EditorProps {
   onPasteFiles: (files: File[]) => Promise<string | null>
   onScrollLine?: (line: number) => void
   onReady?: (view: EditorView) => void
+  onEscape?: () => void // Esc（未被搜索/补全等消费时）
 }
 
 export default function Editor(props: EditorProps) {
@@ -119,7 +120,8 @@ export default function Editor(props: EditorProps) {
         syntaxHighlighting(mdHighlight),
         EditorView.lineWrapping,
         placeholder(tr('editorPlaceholder')),
-        keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...searchKeymap, ...historyKeymap, ...completionKeymap, indentWithTab, ...formatKeymap]),
+        keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...searchKeymap, ...historyKeymap, ...completionKeymap, indentWithTab, ...formatKeymap,
+          { key: 'Escape', run: () => { const f = propsRef.current.onEscape; f?.(); return !!f } }]),
         baseTheme,
         pasteHandler,
         EditorView.updateListener.of((u) => { if (u.docChanged) propsRef.current.onChange(u.state.doc.toString()) }),

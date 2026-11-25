@@ -26,6 +26,34 @@ app.on('second-instance', () => {
   win.focus()
 })
 
+// 从桌面/AppImage 启动时拿不到 ~/.zshrc 等里 export 的变量（如 DOTNET_ROOT、PATH），
+// 导致 git 凭据助手（git-credential-manager 等）运行失败。启动时从用户的交互式登录 shell 导入环境：
+// 只补充缺失的变量，PATH 取并集。
+function importShellEnv() {
+  if (process.platform === 'win32') return
+  const shell = process.env.SHELL || '/bin/sh'
+  const mark = '__DNOTES_ENV__'
+  try {
+    const out = require('node:child_process').execFileSync(
+      shell, ['-ilc', `printf '${mark}'; env -0; printf '${mark}'`],
+      { encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'ignore'], env: { ...process.env, DISABLE_AUTO_UPDATE: 'true' } })
+    const body = out.split(mark)[1]
+    if (!body) return
+    for (const entry of body.split('\0')) {
+      const i = entry.indexOf('=')
+      if (i <= 0) continue
+      const k = entry.slice(0, i), v = entry.slice(i + 1)
+      if (k === 'PATH') {
+        const parts = [...(process.env.PATH || '').split(':'), ...v.split(':')].filter(Boolean)
+        process.env.PATH = [...new Set(parts)].join(':')
+      } else if (!(k in process.env)) {
+        process.env[k] = v
+      }
+    }
+  } catch { /* shell 不可用或超时则保持原环境 */ }
+}
+importShellEnv()
+
 process.env.GIT_TERMINAL_PROMPT = '0' // 不允许 git 卡在交互式密码输入
 
 protocol.registerSchemesAsPrivileged([

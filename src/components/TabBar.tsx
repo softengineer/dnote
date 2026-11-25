@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Pencil, Eye, Columns2, Plus } from 'lucide-react'
+import { X, Pencil, Eye, Columns2, Plus, RefreshCw, Upload } from 'lucide-react'
 import type { ViewMode } from '../types'
 import { t } from '../lib/i18n'
 
@@ -14,9 +14,14 @@ interface Props {
   onReorder: (from: number, to: number) => void
   onMode: (mode: ViewMode) => void
   onNew: () => void
+  // git 远程按钮：仅当 vault 是有 remote 的仓库时显示
+  gitRemote?: boolean
+  gitBusy?: string | null
+  onPull?: () => void
+  onPush?: () => void
 }
 
-export default function TabBar({ tabs, active, onSelect, onClose, onContext, onReorder, onMode, onNew }: Props) {
+export default function TabBar({ tabs, active, onSelect, onClose, onContext, onReorder, onMode, onNew, gitRemote, gitBusy, onPull, onPush }: Props) {
   const [drag, setDrag] = useState<number | null>(null)
   const cur = tabs.find((t) => t.id === active)
   return (
@@ -46,6 +51,10 @@ export default function TabBar({ tabs, active, onSelect, onClose, onContext, onR
       </div>
       <div className="mode-switch">
         <button className="icon-btn" title={t('newNote')} onClick={onNew}><Plus size={15} /></button>
+        {gitRemote && (<>
+          <button className="icon-btn" disabled={!!gitBusy} title={t('gitPullTip')} onClick={onPull}><RefreshCw size={15} className={gitBusy ? 'spin' : ''} /></button>
+          <button className="icon-btn" disabled={!!gitBusy} title={t('gitSyncTip')} onClick={onPush}><Upload size={15} /></button>
+        </>)}
         {cur?.kind === 'md' && (<>
           <button className={`icon-btn ${cur.mode === 'edit' ? 'on' : ''}`} title={t('modeEditTip')} onClick={() => onMode('edit')}><Pencil size={15} /></button>
           <button className={`icon-btn ${cur.mode === 'split' ? 'on' : ''}`} title={t('modeSplit')} onClick={() => onMode('split')}><Columns2 size={15} /></button>

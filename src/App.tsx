@@ -670,6 +670,10 @@ export default function App() {
           onReorder={(a, b) => setTabs((ts) => { const n = [...ts]; const [x] = n.splice(a, 1); n.splice(b, 0, x); return n })}
           onMode={setMode}
           onNew={() => createNote('')}
+          gitRemote={!!git?.isRepo && !!git.remote}
+          gitBusy={gitBusy}
+          onPull={() => runGit('pull')}
+          onPush={() => runGit('sync')}
         />
         <div className="content">
           {tabs.map((t) => (

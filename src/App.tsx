@@ -659,6 +659,7 @@ export default function App() {
           onContext={tabContext}
           onReorder={(a, b) => setTabs((ts) => { const n = [...ts]; const [x] = n.splice(a, 1); n.splice(b, 0, x); return n })}
           onMode={setMode}
+          onNew={() => createNote('')}
         />
         <div className="content">
           {tabs.map((t) => (

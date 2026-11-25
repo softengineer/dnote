@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Pencil, Eye, Columns2 } from 'lucide-react'
+import { X, Pencil, Eye, Columns2, Plus } from 'lucide-react'
 import type { ViewMode } from '../types'
 import { t } from '../lib/i18n'
 
@@ -13,14 +13,16 @@ interface Props {
   onContext: (id: string) => void
   onReorder: (from: number, to: number) => void
   onMode: (mode: ViewMode) => void
+  onNew: () => void
 }
 
-export default function TabBar({ tabs, active, onSelect, onClose, onContext, onReorder, onMode }: Props) {
+export default function TabBar({ tabs, active, onSelect, onClose, onContext, onReorder, onMode, onNew }: Props) {
   const [drag, setDrag] = useState<number | null>(null)
   const cur = tabs.find((t) => t.id === active)
   return (
     <div className="tabbar">
-      <div className="tabs">
+      {/* 点击标签后的空白处 = 新建笔记 */}
+      <div className="tabs" onClick={(e) => { if (e.target === e.currentTarget) onNew() }}>
         {tabs.map((t, i) => (
           <div
             key={t.id}
@@ -42,13 +44,14 @@ export default function TabBar({ tabs, active, onSelect, onClose, onContext, onR
           </div>
         ))}
       </div>
-      {cur?.kind === 'md' && (
-        <div className="mode-switch">
+      <div className="mode-switch">
+        <button className="icon-btn" title={t('newNote')} onClick={onNew}><Plus size={15} /></button>
+        {cur?.kind === 'md' && (<>
           <button className={`icon-btn ${cur.mode === 'edit' ? 'on' : ''}`} title={t('modeEditTip')} onClick={() => onMode('edit')}><Pencil size={15} /></button>
           <button className={`icon-btn ${cur.mode === 'split' ? 'on' : ''}`} title={t('modeSplit')} onClick={() => onMode('split')}><Columns2 size={15} /></button>
           <button className={`icon-btn ${cur.mode === 'preview' ? 'on' : ''}`} title={t('modePreview')} onClick={() => onMode('preview')}><Eye size={15} /></button>
-        </div>
-      )}
+        </>)}
+      </div>
     </div>
   )
 }

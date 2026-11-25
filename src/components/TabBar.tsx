@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Pencil, Eye, Columns2, Plus, RefreshCw, Upload } from 'lucide-react'
+import { X, Pencil, Columns2, Plus, RefreshCw, Upload } from 'lucide-react'
 import type { ViewMode } from '../types'
 import { t } from '../lib/i18n'
 
@@ -56,9 +56,10 @@ export default function TabBar({ tabs, active, onSelect, onClose, onContext, onR
           <button className="icon-btn" disabled={!!gitBusy} title={t('gitSyncTip')} onClick={onPush}><Upload size={15} /></button>
         </>)}
         {cur?.kind === 'md' && (<>
-          <button className={`icon-btn ${cur.mode === 'edit' ? 'on' : ''}`} title={t('modeEditTip')} onClick={() => onMode('edit')}><Pencil size={15} /></button>
-          <button className={`icon-btn ${cur.mode === 'split' ? 'on' : ''}`} title={t('modeSplit')} onClick={() => onMode('split')}><Columns2 size={15} /></button>
-          <button className={`icon-btn ${cur.mode === 'preview' ? 'on' : ''}`} title={t('modePreview')} onClick={() => onMode('preview')}><Eye size={15} /></button>
+          {/* 编辑开关：选中=编辑（分屏下也算编辑），未选中=阅读 */}
+          <button className={`icon-btn ${cur.mode !== 'preview' ? 'on' : ''}`} title={t('modeEditTip')} onClick={() => onMode(cur.mode === 'preview' ? 'edit' : 'preview')}><Pencil size={15} /></button>
+          {/* 分屏开关：选中=分屏，未选中=单视图（编辑） */}
+          <button className={`icon-btn ${cur.mode === 'split' ? 'on' : ''}`} title={t('modeSplit')} onClick={() => onMode(cur.mode === 'split' ? 'edit' : 'split')}><Columns2 size={15} /></button>
         </>)}
       </div>
     </div>

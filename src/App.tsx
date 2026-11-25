@@ -552,6 +552,19 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   })
 
+  // 内容区 Ctrl + 滚轮缩放正文字号（随设置持久化）
+  useEffect(() => {
+    const onWheel = (e: WheelEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || !e.deltaY) return
+      if (!(e.target instanceof Element) || !e.target.closest('.content')) return
+      e.preventDefault()
+      const d = e.deltaY < 0 ? 1 : -1
+      setSettings((s) => ({ ...s, fontSize: Math.min(40, Math.max(9, s.fontSize + d)) }))
+    }
+    window.addEventListener('wheel', onWheel, { passive: false })
+    return () => window.removeEventListener('wheel', onWheel)
+  }, [])
+
   // 关闭窗口前保存
   useEffect(() => {
     const h = () => { flushAll() }

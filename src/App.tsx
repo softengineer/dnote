@@ -78,6 +78,19 @@ export default function App() {
 
   const active = tabs.find((t) => t.id === activeId) ?? null
 
+  // 当前文档变化时（打开/切换标签/恢复会话），展开文件树到该文件
+  const activePath = active?.kind === 'history' ? null : active?.path ?? null
+  useEffect(() => {
+    if (!activePath) return
+    const parts = dirname(activePath).split('/').filter(Boolean)
+    if (!parts.length) return
+    setExpanded((s) => {
+      const dirs = parts.map((_, i) => parts.slice(0, i + 1).join('/'))
+      if (dirs.every((d) => s.has(d))) return s
+      const n = new Set(s); dirs.forEach((d) => n.add(d)); return n
+    })
+  }, [activePath])
+
   // ------------------------------------------------------------ 初始化 & 设置
   useEffect(() => {
     window.api.init().then(async (r) => {
@@ -277,9 +290,6 @@ export default function App() {
       })
     }
     setActiveId(tab.id)
-    // 展开文件树到该文件
-    const parts = dirname(path).split('/').filter(Boolean)
-    if (parts.length) setExpanded((s) => { const n = new Set(s); parts.forEach((_, i) => n.add(parts.slice(0, i + 1).join('/'))); return n })
   }
 
   async function closeTab(id: string) {

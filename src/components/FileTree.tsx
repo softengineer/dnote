@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChevronRight, FileText, Folder, FolderOpen, Image as ImageIcon, File, FilePlus, FolderPlus, ChevronsDownUp } from 'lucide-react'
 import type { TreeNode } from '../types'
 import { isImage, isMarkdown } from '../lib/paths'
@@ -18,6 +18,17 @@ interface Props {
 
 export default function FileTree(p: Props) {
   const [dropTarget, setDropTarget] = useState<string | null>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const revealed = useRef<string | null>(null)
+
+  // 当前文件变化时滚动到可见位置；每个文件只滚动一次，避免用户手动展开其他目录时被拉回
+  useEffect(() => {
+    if (!p.activePath || revealed.current === p.activePath) return
+    const el = rootRef.current?.querySelector<HTMLElement>('.tree-item.file.active')
+    if (!el) return // 目录可能尚未展开 / 树尚未加载，等下次渲染
+    el.scrollIntoView({ block: 'nearest' })
+    revealed.current = p.activePath
+  }, [p.activePath, p.expanded, p.tree])
 
   const toggle = (path: string) => {
     const s = new Set(p.expanded)
@@ -81,7 +92,7 @@ export default function FileTree(p: Props) {
     })
 
   return (
-    <div className="panel">
+    <div className="panel" ref={rootRef}>
       <div className="panel-header">
         <span>{t('files')}</span>
         <div className="panel-actions">

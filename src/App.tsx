@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Files, Search, CalendarDays, GitBranch, Settings as SettingsIcon, FolderSync, ArrowUpDown, PanelLeft } from 'lucide-react'
+import { Files, Search, CalendarDays, GitBranch, Settings as SettingsIcon, FolderSync, ArrowUpDown, PanelLeft, ChevronsUpDown } from 'lucide-react'
 import type { GitStatus, Settings, TreeNode, VaultInfo, ViewMode } from './types'
 import { DEFAULT_SETTINGS, applySettings, renderTemplate } from './lib/settings'
 import { formatDate } from './lib/date'
@@ -618,6 +618,24 @@ export default function App() {
     </button>
   )
 
+  // vault 切换菜单（左下角 vault 名称与 ribbon 按钮共用）
+  const vaultMenu = async () => {
+    const r = await window.api.popupMenu([
+      ...vaults.slice(0, 15).map((v) => ({ id: 'open:' + v.path, label: v.name, checked: v.path === vault.path })),
+      { type: 'separator' },
+      { id: 'pick', label: t('openOtherFolder') },
+      { id: 'window', label: t('openVaultInNewWindow') },
+      { type: 'separator' },
+      { id: 'manage', label: t('manageVaults') },
+      { id: 'close', label: t('closeVault') },
+    ])
+    if (!r) return
+    if (r.startsWith('open:')) { if (r.slice(5) !== vault.path) openVault(r.slice(5)) }
+    else if (r === 'pick') { const p = await window.api.pickVault(); if (p) openVault(p) }
+    else if (r === 'window') { const p = await window.api.pickVault(); if (p) window.api.newWindow(p) }
+    else if (r === 'manage' || r === 'close') closeVault()
+  }
+
   const activeMd = active?.kind === 'md' ? active : null
   const words = activeMd ? wordCount(activeMd.content) : 0
 
@@ -629,23 +647,12 @@ export default function App() {
         {sideButton('calendar', CalendarDays, t('journal'))}
         {sideButton('git', GitBranch, t('gitSync'))}
         <div className="spacer" />
-        <button className="ribbon-btn" title={t('switchVault')} onClick={async () => {
-          const r = await window.api.popupMenu([
-            ...vaults.filter((v) => v.path !== vault.path).slice(0, 8).map((v) => ({ id: 'open:' + v.path, label: v.name })),
-            { type: 'separator' }, { id: 'pick', label: t('openOtherFolder') }, { id: 'window', label: t('openVaultInNewWindow') }, { id: 'close', label: t('closeVault') },
-          ])
-          if (!r) return
-          if (r.startsWith('open:')) openVault(r.slice(5))
-          else if (r === 'pick') { const p = await window.api.pickVault(); if (p) openVault(p) }
-          else if (r === 'window') { const p = await window.api.pickVault(); if (p) window.api.newWindow(p) }
-          else if (r === 'close') closeVault()
-        }}><FolderSync size={19} /></button>
+        <button className="ribbon-btn" title={t('switchVault')} onClick={vaultMenu}><FolderSync size={19} /></button>
         <button className="ribbon-btn" title={t('settings') + ' (Ctrl+,)'} onClick={() => setShowSettings(true)}><SettingsIcon size={19} /></button>
       </div>
 
       {!sideHidden && (
         <aside className="sidebar">
-          <div className="vault-name" title={vault.path}>{vault.name}</div>
           {side === 'files' && (
             <FileTree
               tree={tree}
@@ -668,6 +675,11 @@ export default function App() {
             <GitPanel status={git} busy={gitBusy} run={(op, m) => runGit(op, m)} setStatus={setGit}
               onOpen={(p) => openFile(p)} activePath={activeMd?.path ?? null} onShowVersion={showVersion} />
           )}
+          <button className="vault-switcher" title={`${vault.path}
+${t('switchVault')}`} onClick={vaultMenu}>
+            <span className="vault-switcher-name">{vault.name}</span>
+            <ChevronsUpDown size={14} />
+          </button>
           <div className="resizer" onMouseDown={startResize} />
         </aside>
       )}

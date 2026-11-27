@@ -77,8 +77,8 @@ function saveConfig() {
 
 // ---------------------------------------------------------------- 主进程文案（跟随设置里的界面语言）
 const MSG = {
-  zh: { noVault: '尚未打开 vault', outside: '路径越界: ', badRegex: '正则表达式无效: ', noRemote: '未配置远程仓库', noDir: '目录不存在: ', exists: '目标已存在: ', pickVault: '选择或新建 vault 文件夹' },
-  en: { noVault: 'No vault is open', outside: 'Path is outside the vault: ', badRegex: 'Invalid regular expression: ', noRemote: 'No remote repository configured', noDir: 'Directory does not exist: ', exists: 'Target already exists: ', pickVault: 'Choose or create a vault folder' },
+  zh: { noVault: '尚未打开 vault', outside: '路径越界: ', badRegex: '正则表达式无效: ', noRemote: '未配置远程仓库', noDir: '目录不存在: ', exists: '目标已存在: ', pickVault: '选择或新建 vault 文件夹', conflictCopy: '冲突副本', detached: '当前不在任何分支上（可能有未完成的 rebase），已停止推送' },
+  en: { noVault: 'No vault is open', outside: 'Path is outside the vault: ', badRegex: 'Invalid regular expression: ', noRemote: 'No remote repository configured', noDir: 'Directory does not exist: ', exists: 'Target already exists: ', pickVault: 'Choose or create a vault folder', conflictCopy: 'conflict copy', detached: 'Not on any branch (an unfinished rebase?); push stopped' },
 }
 const m = (k) => (MSG[config.settings?.language] ?? MSG.zh)[k]
 
@@ -286,18 +286,88 @@ async function hasUpstream(g) {
   try { await g.raw(['rev-parse', '--abbrev-ref', '@{u}']); return true } catch { return false }
 }
 
-async function gitPull(g) {
+async function gitPath(g, root, p) { return path.resolve(root, (await g.raw(['rev-parse', '--git-path', p])).trim()) }
+
+// 文本笔记用 union 合并：两边改动的行都保留，不产生冲突标记。
+// 写在 .git/info/attributes（仅本地生效，不进入仓库内容）
+const UNION_ATTRS = ['*.md merge=union', '*.markdown merge=union', '*.txt merge=union']
+async function ensureUnionMerge(g, root) {
+  const f = await gitPath(g, root, 'info/attributes')
+  const cur = await fs.readFile(f, 'utf8').catch(() => '')
+  const lines = cur.split(/\r?\n/)
+  const missing = UNION_ATTRS.filter((l) => !lines.includes(l))
+  if (!missing.length) return
+  await fs.mkdir(path.dirname(f), { recursive: true })
+  await fs.writeFile(f, cur + (cur && !cur.endsWith('\n') ? '\n' : '') + missing.join('\n') + '\n')
+}
+
+async function rebaseInProgress(g, root) {
+  for (const p of ['rebase-merge', 'rebase-apply']) if (fss.existsSync(await gitPath(g, root, p))) return true
+  return false
+}
+
+async function stageBlob(g, stage, rel) {
+  try { return await g.showBuffer([`:${stage}:${rel}`]) } catch { return null }
+}
+
+// rebase 过程中自动解决冲突：远程版本保留在原路径，本地版本另存为“冲突副本”，不丢任何内容
+async function autoResolveRebase(g, root) {
+  const d = new Date()
+  const pad = (n) => String(n).padStart(2, '0')
+  const stamp = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}${pad(d.getMinutes())}`
+  for (let round = 0; round < 200 && (await rebaseInProgress(g, root)); round++) {
+    const conflicted = (await g.status()).conflicted
+    for (const rel of conflicted) {
+      const abs = resolveIn(root, rel)
+      const upstream = await stageBlob(g, 2, rel) // rebase 中 stage 2 = 上游（远程）
+      const local = await stageBlob(g, 3, rel) // stage 3 = 正在重放的本地提交
+      await fs.mkdir(path.dirname(abs), { recursive: true })
+      if (upstream && local) {
+        await fs.writeFile(abs, upstream)
+        const { dir, name, ext } = path.parse(abs)
+        await fs.writeFile(await uniquePath(path.join(dir, `${name} (${m('conflictCopy')} ${stamp})${ext}`)), local)
+      } else if (upstream || local) {
+        await fs.writeFile(abs, upstream || local) // 一边删除一边修改：保留修改
+      } else {
+        await fs.rm(abs, { force: true })
+      }
+    }
+    await g.add(['-A'])
+    try {
+      // 先自己提交（沿用原提交信息），rebase --continue 就不会再打开编辑器
+      if ((await g.status()).staged.length) await g.raw(['commit', '--no-edit', '--no-verify'])
+      await g.raw(['rebase', '--continue'])
+    } catch (err) {
+      const st = await g.status()
+      if (st.conflicted.length) continue // 下一个提交又冲突，继续处理
+      if (!st.files.length && (await rebaseInProgress(g, root))) await g.raw(['rebase', '--skip']).catch(() => {}) // 解决后为空提交
+      else throw err
+    }
+  }
+}
+
+async function pullRebase(g, root) {
+  await ensureUnionMerge(g, root)
+  try {
+    await g.pull(['--rebase', '--autostash'])
+  } catch (err) {
+    if (!(await rebaseInProgress(g, root))) throw err
+    await autoResolveRebase(g, root)
+  }
+}
+
+async function gitPull(g, root) {
   const remotes = await g.getRemotes()
   if (!remotes.length) throw new Error(m('noRemote'))
   if (await hasUpstream(g)) {
-    await g.pull(['--rebase', '--autostash'])
+    await pullRebase(g, root)
   } else {
     const branch = (await g.status()).current
     await g.fetch()
     const remoteBranches = await g.branch(['-r'])
     if (remoteBranches.all.includes(`origin/${branch}`)) {
       await g.raw(['branch', `--set-upstream-to=origin/${branch}`, branch])
-      await g.pull(['--rebase', '--autostash'])
+      await pullRebase(g, root)
     }
   }
 }
@@ -305,6 +375,7 @@ async function gitPull(g) {
 async function gitPush(g) {
   const remotes = await g.getRemotes()
   if (!remotes.length) throw new Error(m('noRemote'))
+  if ((await g.status()).detached) throw new Error(m('detached')) // 不在分支上（如 rebase 未完成），不能推送 "HEAD"
   if (await hasUpstream(g)) await g.push()
   else await g.push(['-u', 'origin', (await g.status()).current])
 }
@@ -326,13 +397,19 @@ const gitOps = {
     return gitStatus(root)
   },
   commit: async (root, message) => { await ensureCommitted(git(root), message); return gitStatus(root) },
-  pull: async (root) => { await gitPull(git(root)); return gitStatus(root) },
+  pull: async (root) => {
+    const g = git(root)
+    if (await rebaseInProgress(g, root)) await autoResolveRebase(g, root) // 上次遗留的冲突
+    await gitPull(g, root)
+    return gitStatus(root)
+  },
   push: async (root) => { await gitPush(git(root)); return gitStatus(root) },
   sync: async (root, message) => {
     const g = git(root)
+    if (await rebaseInProgress(g, root)) await autoResolveRebase(g, root) // 上次遗留的冲突
     await ensureCommitted(g, message)
     if ((await g.getRemotes()).length) {
-      await gitPull(g)
+      await gitPull(g, root)
       await gitPush(g)
     }
     return gitStatus(root)
@@ -374,7 +451,7 @@ function registerIpc() {
     let picked = null
     const build = (list) => list.map((it) => it.type === 'separator'
       ? { type: 'separator' }
-      : { label: it.label, enabled: it.enabled !== false, click: () => { picked = it.id } })
+      : { label: it.label, enabled: it.enabled !== false, ...(it.checked != null ? { type: 'checkbox', checked: !!it.checked } : {}), click: () => { picked = it.id } })
     Menu.buildFromTemplate(build(items)).popup({
       window: BrowserWindow.fromWebContents(e.sender),
       callback: () => setTimeout(() => resolve(picked), 0),

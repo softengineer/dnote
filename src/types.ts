@@ -52,7 +52,7 @@ export interface Settings {
   sidebarWidth: number
 }
 
-export interface MenuItem { id?: string; label?: string; enabled?: boolean; type?: 'separator' }
+export interface MenuItem { id?: string; label?: string; enabled?: boolean; checked?: boolean; type?: 'separator' }
 
 export interface Api {
   init(): Promise<{ settings: Partial<Settings>; vaults: VaultInfo[]; vault: string | null; platform: string }>

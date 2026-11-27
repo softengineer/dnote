@@ -14,7 +14,10 @@ npm start            # run the built app (electron .)
 npm run dist         # electron-builder installers to release/ (dist:linux = AppImage only)
 ./deploy.sh          # build AppImage, install to ~/Apps/DNotes.AppImage, register .desktop, build CLI to ~/.local/bin/dnote, restart if running (--skip-build to reuse release/, --cli-only, --no-cli)
 ./deploy.sh --cli-only   # build + install only the Go CLI (cd cli && go vet ./... to check)
+.\deploy.ps1         # Windows equivalent: npm run dist:win (unpacked dir), install to %LOCALAPPDATA%\Programs\DNotes, Start Menu shortcut, CLI to ~\.local\bin\dnote.exe, restart if running (-SkipBuild, -CliOnly, -NoCli)
 ```
+
+`deploy.ps1` must stay UTF-8 **with BOM** (Windows PowerShell 5.1 misreads Chinese text otherwise).
 
 If `npm start` on Linux fails with `chrome-sandbox ... must be owned by root and has mode 4755`:
 `sudo chown root:root node_modules/electron/dist/chrome-sandbox && sudo chmod 4755 node_modules/electron/dist/chrome-sandbox` (redo after reinstalling electron).
@@ -29,7 +32,7 @@ If `npm start` on Linux fails with `chrome-sandbox ... must be owned by root and
 
 **Config.** Persisted only in Electron `userData/config.json` (`vaults`, `lastVault`, `settings`, `sessions` keyed by vault path) with debounced writes. Nothing is written into the vault itself. App is single-instance except in `--dev` mode.
 
-**Git.** Uses `simple-git` with the system git config (SSH keys / credential helpers); `GIT_TERMINAL_PROMPT=0` so git never blocks on prompts. Pull is rebase + autostash; `sync` = commit → pull → push.
+**Git.** Uses `simple-git` with the system git config (SSH keys / credential helpers); `GIT_TERMINAL_PROMPT=0` so git never blocks on prompts. Pull is rebase + autostash; `sync` = commit → pull → push. Conflicts are resolved automatically: `*.md/*.markdown/*.txt merge=union` is written to `.git/info/attributes` (local only), and anything still conflicted is resolved by `autoResolveRebase()` (remote version keeps the path, local version saved as `name (冲突副本 <time>).ext`). Leftover rebase state is resumed at the start of pull/sync.
 
 **Local images.** A privileged `dnote://` protocol (`dnote://f/<abs path>`, built by `fileUrl()` in `src/lib/paths.ts`) serves vault files to the preview. The CSP is set in main.cjs; DOMPurify in `src/lib/markdown.ts` must allow the `dnote:` scheme and custom `data-*` attributes.
 

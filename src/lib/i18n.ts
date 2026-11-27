@@ -23,6 +23,7 @@ const zh = {
   openOtherFolder: '打开其他文件夹…',
   openVaultInNewWindow: '在新窗口中打开 vault…',
   closeVault: '关闭 vault',
+  manageVaults: '管理 vault…',
   toggleSidebar: '侧边栏',
   // 文件树
   newNote: '新建笔记',
@@ -243,6 +244,7 @@ const en: Record<I18nKey, string> = {
   openOtherFolder: 'Open another folder…',
   openVaultInNewWindow: 'Open vault in new window…',
   closeVault: 'Close vault',
+  manageVaults: 'Manage vaults…',
   toggleSidebar: 'Sidebar',
   newNote: 'New note',
   newFolder: 'New folder',

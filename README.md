@@ -2,6 +2,9 @@
 
 A lightweight Markdown notes / journal app (Electron + Vite + React) that keeps only the essentials: notes, daily journal, browsing, search, and Git sync.
 
+<img width="944" height="610" alt="image" src="https://github.com/user-attachments/assets/88e72a0a-d1e6-43a7-939e-544798f43926" />
+
+
 ## Features
 
 - **Vault**: any folder can be a vault, and notes are plain `.md` files; recent vaults list, vault switching, multiple windows

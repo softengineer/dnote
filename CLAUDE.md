@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-DNotes: a lightweight Markdown notes/journal desktop app (Electron + Vite + React 19 + TypeScript, CodeMirror 6, markdown-it). Code comments and README are in Chinese; follow that convention.
+DNotes: a lightweight Markdown notes/journal desktop app (Electron + Vite + React 19 + TypeScript, CodeMirror 6, markdown-it). Code comments are in Chinese; follow that convention. README is in English.
 
 ## Commands
 

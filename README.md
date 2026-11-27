@@ -1,59 +1,60 @@
 # DNotes
 
-轻量级 Markdown 笔记 / 日记应用（Electron + Vite + React），只保留核心功能：笔记、日记、浏览、搜索、Git 同步。
+A lightweight Markdown notes / journal app (Electron + Vite + React) that keeps only the essentials: notes, daily journal, browsing, search, and Git sync.
 
-## 功能
+## Features
 
-- **Vault**：任意文件夹即 vault，笔记就是普通 `.md` 文件；最近打开列表、切换 vault、多窗口
-- **标签页**：单击替换当前标签、Ctrl/中键点击新标签；拖拽排序、右键菜单、Ctrl+Shift+T 恢复关闭的标签、会话自动恢复
-- **Markdown**：CodeMirror 6 编辑器（代码块语法高亮、`[[` 自动补全、粘贴/拖入图片自动存入附件目录）；编辑 / 分屏（滚动同步）/ 阅读三种视图；支持 `[[wikilink]]`、`![[图片]]`、任务列表（可在阅读视图直接勾选）、表格、frontmatter
-- **日记**：Ctrl+Shift+D 打开今日日记，日历面板浏览，文件名格式与模板可配置
-- **搜索**：全文 + 文件名搜索，支持区分大小写 / 正则；Ctrl+O 模糊快速打开 / 新建
-- **Git**：初始化、设置远程、提交、拉取（rebase + autostash）、推送、一键同步、定时自动同步、打开时自动拉取、查看提交历史和文件历史版本；从远程仓库直接克隆为 vault
-- **多语言**：界面支持简体中文（默认）和 English，设置 → 外观 → 界面语言，即时切换
-- **主题**：跟随系统 / 明亮 / 暗黑 / 纸张 / Solarized / Nord / Dracula / Gruvbox，可写自定义 CSS 覆盖变量
-- **字体**：界面、正文、等宽字体分别可选（列出系统字体），字号 / 行高 / 行宽可调，Ctrl+= / Ctrl+- 快速缩放
+- **Vault**: any folder can be a vault, and notes are plain `.md` files; recent vaults list, vault switching, multiple windows
+- **Tabs**: click replaces the current tab, Ctrl/middle-click opens a new tab; drag to reorder, context menu, Ctrl+Shift+T reopens closed tabs, session restored automatically
+- **Markdown**: CodeMirror 6 editor (syntax highlighting in code blocks, `[[` autocompletion, pasted/dropped images saved to the attachments folder automatically); edit / split (synced scrolling) / reading views; supports `[[wikilink]]`, `![[image]]`, task lists (checkable directly in reading view), tables, frontmatter
+- **Journal**: Ctrl+Shift+D opens today's journal entry, browse entries in the calendar panel, configurable file name format and template
+- **Search**: full-text + file name search, with case-sensitive / regex options; Ctrl+O fuzzy quick open / create
+- **Git**: init, set remote, commit, pull (rebase + autostash), push, one-click sync, scheduled auto-sync, auto-pull on open, commit history and file version history; clone a remote repository directly as a vault. Sync conflicts are resolved automatically (Markdown/text files are union-merged; anything still conflicting keeps the remote version and saves the local one as a conflict copy)
+- **Languages**: UI available in Simplified Chinese (default) and English; switch instantly in Settings → Appearance → Interface language
+- **Themes**: follow system / Light / Dark / Paper / Solarized / Nord / Dracula / Gruvbox, plus custom CSS to override variables
+- **Fonts**: separate UI, body, and monospace fonts (system fonts are listed); adjustable font size / line height / line width, Ctrl+= / Ctrl+- for quick zoom
 
-Git 认证直接使用系统 git 配置（SSH key / credential helper），命令行能 push 即可。
+Git authentication uses your system git config directly (SSH key / credential helper) — if you can push from the command line, it works.
 
-## 开发
+## Development
 
 ```bash
 npm install
-npm run dev          # Vite + Electron 热更新
-npm run build        # 类型检查 + 构建前端到 dist/
-npm start            # 运行构建后的版本
-npm run dist         # 打包安装包（electron-builder，输出到 release/）
-./deploy.sh           # 打包 AppImage 并安装到 ~/Apps/DNotes.AppImage，同时安装 CLI（--skip-build 跳过打包，--cli-only 只装 CLI，--no-cli 不装 CLI）
+npm run dev          # Vite + Electron with hot reload
+npm run build        # type check + build the frontend to dist/
+npm start            # run the built app
+npm run dist         # build installers (electron-builder, output to release/)
+./deploy.sh          # Linux: build the AppImage, install to ~/Apps/DNotes.AppImage, and install the CLI (--skip-build to skip building, --cli-only to install only the CLI, --no-cli to skip the CLI)
+.\deploy.ps1         # Windows: build, install to %LOCALAPPDATA%\Programs\DNotes with a Start Menu shortcut, and install the CLI to ~\.local\bin\dnote.exe (-SkipBuild, -CliOnly, -NoCli)
 ```
 
-`npm run dev` 默认带 `--no-sandbox`（仅开发用，规避 Linux 上 chrome-sandbox 权限报错）。
-`npm start` 若在 Linux 报 `chrome-sandbox ... must be owned by root and has mode 4755`，执行一次（每次重装 electron 后需重做）：
+`npm run dev` runs with `--no-sandbox` by default (development only, to avoid the chrome-sandbox permission error on Linux).
+If `npm start` on Linux fails with `chrome-sandbox ... must be owned by root and has mode 4755`, run this once (redo it after every reinstall of electron):
 
 ```bash
 sudo chown root:root node_modules/electron/dist/chrome-sandbox && sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
 ```
 
-## 命令行
+## Command line
 
-`cli/` 下是 Go 写的 `dnote` 命令（`./deploy.sh` 会装到 `~/.local/bin/dnote`，或 `cd cli && go build -o ~/.local/bin/dnote .`）：
+`cli/` contains the `dnote` command written in Go (`./deploy.sh` installs it to `~/.local/bin/dnote`, or run `cd cli && go build -o ~/.local/bin/dnote .`):
 
 ```bash
-dnote <文件名> [--vault <路径>]             # 显示笔记内容：按文件名匹配，忽略目录，.md 可省略；多个匹配全部显示
-dnote --search <关键词> [--vault <路径>]    # 在 vault 中搜索（不区分大小写），输出 路径:行号: 内容
-dnote <文件名> --search <关键词>            # 只在匹配的笔记中搜索
+dnote <filename> [--vault <path>]             # show a note: matched by file name, ignoring directories, .md optional; all matches are shown
+dnote --search <keyword> [--vault <path>]     # search the vault (case-insensitive), output as path:line: content
+dnote <filename> --search <keyword>           # search only within the matching notes
 ```
 
-未指定 `--vault` 时，优先使用当前目录所在的已知 vault，否则使用 DNotes 最后打开的 vault（读取 `~/.config/dnotes/config.json`）。没有精确的文件名匹配时退化为包含匹配。
+Without `--vault`, it uses the known vault containing the current directory, otherwise the vault DNotes last opened (read from the app's `config.json`, e.g. `~/.config/dnotes/config.json`). If there is no exact file name match, it falls back to substring matching.
 
-## 结构
+## Structure
 
 ```
-electron/main.cjs     主进程：vault/文件读写（限制在 vault 内）、文件监听、全文搜索、Git、字体列表
-electron/preload.cjs  contextBridge 暴露 window.api
-src/App.tsx           应用状态：标签页、侧边栏、快捷键、自动保存、Git 同步
+electron/main.cjs     main process: vault/file I/O (restricted to the vault), file watching, full-text search, Git, font list
+electron/preload.cjs  exposes window.api via contextBridge
+src/App.tsx           app state: tabs, sidebar, shortcuts, autosave, Git sync
 src/components/       Editor / Preview / FileTree / SearchPanel / CalendarPanel / GitPanel / TabBar / QuickSwitcher / SettingsModal
-src/styles/themes.css 主题（CSS 变量）
+src/styles/themes.css themes (CSS variables)
 ```
 
-配置保存在 Electron userData 目录的 `config.json`，vault 内不写入任何配置文件。
+Settings are stored in `config.json` in Electron's userData directory; no config files are written into the vault.
